@@ -126,7 +126,8 @@ func main() {
 }
 
 func printNotice(fn string, start, end int) {
-	fmt.Printf("::notice file=%s,line=%d,endLine=%d,title=Code Coverage::Not covered by tests.\n", fn, start, end)
+	fmt.Println(fn, start, end)
+	fmt.Printf("::notice file=%s,line=%d,endLine=%d::Not covered by tests.\n", fn, start, end)
 }
 
 // ProfileBlock represents a single block of profiling data.
