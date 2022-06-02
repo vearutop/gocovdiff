@@ -38,11 +38,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	type rng struct {
-		start, end int
-		covered    []int
-	}
-
 	modified := map[string]map[int]bool{}
 
 	for _, f := range diff.Files {
@@ -55,7 +50,6 @@ func main() {
 		for _, h := range f.Hunks {
 			for _, l := range h.NewRange.Lines {
 				lines[l.Number] = false
-				// println(f.NewName, l.Number, l.Content)
 			}
 		}
 
@@ -64,7 +58,7 @@ func main() {
 
 	testedFiles := map[string]bool{}
 
-	err = ParseProfiles(c, func(fn string, block ProfileBlock) {
+	err = parseProfiles(c, func(fn string, block profileBlock) {
 		fn = strings.TrimPrefix(fn, m+"/")
 		testedFiles[fn] = true
 
@@ -72,8 +66,6 @@ func main() {
 		if !ok {
 			return
 		}
-
-		// println("cov", fn, block.StartLine, block.EndLine)
 
 		for i := block.StartLine; i <= block.EndLine; i++ {
 			if block.Count > 0 {
@@ -96,7 +88,7 @@ func main() {
 
 	for _, fn := range files {
 		if !testedFiles[fn] {
-			printNotice(fn, 1, 1)
+			printNotTested(fn)
 		}
 
 		lines := modified[fn]
@@ -113,6 +105,7 @@ func main() {
 
 		p := ll[0]
 		start := 0
+
 		for _, i := range ll {
 			if start == 0 {
 				start = p
@@ -145,8 +138,8 @@ func printNotice(fn string, start, end int) {
 	fmt.Printf("::notice file=%s,line=%d,endLine=%d::Not covered by tests.\n", fn, start, end)
 }
 
-// ProfileBlock represents a single block of profiling data.
-type ProfileBlock struct {
+// profileBlock represents a single block of profiling data.
+type profileBlock struct {
 	StartLine, StartCol int
 	EndLine, EndCol     int
 	NumStmt, Count      int
@@ -154,14 +147,20 @@ type ProfileBlock struct {
 
 var lineRe = regexp.MustCompile(`^(.+):([0-9]+).([0-9]+),([0-9]+).([0-9]+) ([0-9]+) ([0-9]+)$`)
 
-// ParseProfiles parses profile data in the specified file and returns a
-// Profile for each source file described therein.
-func ParseProfiles(fileName string, cb func(fn string, block ProfileBlock)) error {
+// parseProfiles parses profile data in the specified file and calls a
+// function for each Profile for each source file described therein.
+// See https://github.com/golang/go/blob/0104a31b8fbcbe52728a08867b26415d282c35d2/src/cmd/cover/profile.go.
+func parseProfiles(fileName string, cb func(fn string, block profileBlock)) error {
 	pf, err := os.Open(fileName)
 	if err != nil {
 		return err
 	}
-	defer pf.Close()
+
+	defer func() {
+		if err := pf.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	buf := bufio.NewReader(pf)
 	// First line is "mode: foo", where foo is "set", "count", or "atomic".
@@ -170,23 +169,30 @@ func ParseProfiles(fileName string, cb func(fn string, block ProfileBlock)) erro
 	// where the fields are: name.go:line.column,line.column numberOfStatements count
 	s := bufio.NewScanner(buf)
 	mode := ""
+
 	for s.Scan() {
 		line := s.Text()
+
 		if mode == "" {
 			const p = "mode: "
+
 			if !strings.HasPrefix(line, p) || line == p {
 				return fmt.Errorf("bad mode line: %v", line)
 			}
+
 			mode = line[len(p):]
+
 			continue
 		}
+
 		m := lineRe.FindStringSubmatch(line)
 		if m == nil {
 			return fmt.Errorf("line %q doesn't match expected format: %v", m, lineRe)
 		}
+
 		fn := m[1]
 
-		pb := ProfileBlock{
+		pb := profileBlock{
 			StartLine: toInt(m[2]),
 			StartCol:  toInt(m[3]),
 			EndLine:   toInt(m[4]),
@@ -197,9 +203,11 @@ func ParseProfiles(fileName string, cb func(fn string, block ProfileBlock)) erro
 
 		cb(fn, pb)
 	}
+
 	if err := s.Err(); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -208,5 +216,6 @@ func toInt(s string) int {
 	if err != nil {
 		panic(err)
 	}
+
 	return i
 }
