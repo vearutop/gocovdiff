@@ -20,13 +20,20 @@ func main() {
 		d string
 		c string
 		m string
+		f string
 	)
 
-	flag.StringVar(&d, "diff", "", "Git diff file")
+	flag.StringVar(&d, "diff", "", "Code git diff file")
 	flag.StringVar(&c, "cov", "coverage.txt", "Coverage file")
 	flag.StringVar(&m, "mod", "", "Module name")
+	flag.StringVar(&f, "func", "", "File to store function coverage report")
 
 	flag.Parse()
+
+	if d == "" || c == "" || m == "" {
+		flag.Usage()
+		os.Exit(0)
+	}
 
 	df, err := ioutil.ReadFile(d)
 	if err != nil {
@@ -38,18 +45,23 @@ func main() {
 		log.Fatal(err)
 	}
 
-	modified := map[string]map[int]bool{}
+	type line struct {
+		statements int
+		covered    int
+	}
+
+	modified := map[string]map[int]line{}
 
 	for _, f := range diff.Files {
 		if !strings.HasSuffix(f.NewName, ".go") || strings.HasSuffix(f.NewName, "_test.go") {
 			continue
 		}
 
-		lines := map[int]bool{}
+		lines := map[int]line{}
 
 		for _, h := range f.Hunks {
 			for _, l := range h.NewRange.Lines {
-				lines[l.Number] = false
+				lines[l.Number] = line{covered: -1}
 			}
 		}
 
@@ -68,11 +80,14 @@ func main() {
 		}
 
 		for i := block.StartLine; i <= block.EndLine; i++ {
-			if block.Count > 0 {
-				delete(lines, i)
-			} else {
-				lines[i] = true
+			l, ok := lines[i]
+			if !ok {
+				continue
 			}
+
+			l.covered = block.Count
+			l.statements += block.NumStmt
+			lines[i] = l
 		}
 	})
 	if err != nil {
@@ -86,6 +101,8 @@ func main() {
 
 	sort.Strings(files)
 
+	var functions []funcInfo
+
 	for _, fn := range files {
 		if !testedFiles[fn] {
 			printNotTested(fn)
@@ -93,10 +110,54 @@ func main() {
 
 		lines := modified[fn]
 
+		if f != "" {
+			funcs, err := findFuncs(fn)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			for _, fu := range funcs {
+				totStmt := 0
+				covStmt := 0
+
+				for i := fu.startLine; i <= fu.endLine; i++ {
+					if l, ok := lines[i]; ok {
+						totStmt += l.statements
+						if l.covered > 0 {
+							covStmt += l.statements
+						}
+					}
+				}
+
+				if totStmt > 0 {
+					functions = append(functions, funcInfo{
+						name:       fu.name,
+						file:       fn,
+						covPercent: float64(covStmt) / float64(totStmt) * 100,
+					})
+				}
+			}
+
+			sort.Slice(functions, func(i, j int) bool {
+				return functions[i].covPercent > functions[j].covPercent
+			})
+
+			res := "| File | Function | Coverage |\n"
+			res += "| ---- | -------- | -------- |\n"
+			for _, fu := range functions {
+				res += fmt.Sprintf("| %s | %s | %.2f%% |\n", fu.file, fu.name, fu.covPercent)
+			}
+
+			err = ioutil.WriteFile(f, []byte(res), 0600)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
 		ll := make([]int, 0, len(lines))
 
-		for i, isZero := range lines {
-			if isZero {
+		for i, l := range lines {
+			if l.covered == 0 {
 				ll = append(ll, i)
 			}
 		}
@@ -126,6 +187,12 @@ func main() {
 
 		printNotice(fn, start, p)
 	}
+}
+
+type funcInfo struct {
+	name       string
+	file       string
+	covPercent float64
 }
 
 func printNotTested(fn string) {

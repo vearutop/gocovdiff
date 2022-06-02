@@ -86,6 +86,19 @@ jobs:
       - name: Store base coverage
         if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' }}
         run: cp unit.txt unit-base.txt
+
+      - name: Annotate missing test coverage
+        id: annotate
+        if: ${{ github.event.pull_request.base.sha }}
+        run: |
+          go install .
+          git fetch origin master ${{ github.event.pull_request.base.sha }}
+          git diff ${{ github.event.pull_request.base.sha }} > diff.txt
+          gocovdiff -diff diff.txt -cov unit.coverprofile -mod $(go list -m) -func func.txt
+          FUNC=$(cat func.txt)
+          FUNC="${FUNC//$'\n'/%0A}"
+          echo "::set-output name=func::$FUNC"
+
       - name: Comment Test Coverage
         continue-on-error: true
         if: matrix.go-version == env.COV_GO_VERSION
@@ -96,6 +109,12 @@ jobs:
           message: |
             ### Unit Test Coverage
             ${{ steps.test.outputs.total }}
+            <details><summary>Coverage of changed lines in functions</summary>
+            
+            ${{ steps.annotate.outputs.func }}
+
+            </details>
+            
             <details><summary>Coverage diff with base branch</summary>
 
             ```diff
@@ -110,11 +129,4 @@ jobs:
           file: ./unit.coverprofile
           flags: unittests
 
-      - name: Result
-        if: ${{ github.event.pull_request.base.sha }}
-        run: |
-          go install .
-          git fetch origin master ${{ github.event.pull_request.base.sha }}
-          git diff ${{ github.event.pull_request.base.sha }} > diff.txt
-          gocovdiff -diff diff.txt -cov unit.coverprofile -mod $(go list -m)
-          
+
