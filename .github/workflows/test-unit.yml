@@ -103,3 +103,10 @@ jobs:
         with:
           file: ./unit.coverprofile
           flags: unittests
+
+      - name: Result
+        run: |
+          go install .
+          git diff $(git merge-base origin/master --fork-point) > diff.txt
+          gocovdiff -diff diff.txtt -cov unit.coverprofile -mod $(go list -m)
+          
