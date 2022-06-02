@@ -53,7 +53,7 @@ func main() {
 
 		for _, h := range f.Hunks {
 			for _, l := range h.NewRange.Lines {
-				lines[l.Number] = true
+				lines[l.Number] = false
 				//println(f.NewName, l.Number, l.Content)
 			}
 		}
@@ -61,12 +61,11 @@ func main() {
 		modified[f.NewName] = lines
 	}
 
+	testedFiles := map[string]bool{}
+
 	err = ParseProfiles(c, func(fn string, block ProfileBlock) {
 		fn = strings.TrimPrefix(fn, m+"/")
-
-		if block.Count == 0 {
-			return
-		}
+		testedFiles[fn] = true
 
 		lines, ok := modified[fn]
 		if !ok {
@@ -76,7 +75,11 @@ func main() {
 		//println("cov", fn, block.StartLine, block.EndLine)
 
 		for i := block.StartLine; i <= block.EndLine; i++ {
-			delete(lines, i)
+			if block.Count > 0 {
+				delete(lines, i)
+			} else {
+				lines[i] = true
+			}
 		}
 	})
 	if err != nil {
@@ -91,12 +94,18 @@ func main() {
 	sort.Strings(files)
 
 	for _, fn := range files {
+		if !testedFiles[fn] {
+			printNotice(fn, 1, 1)
+		}
+
 		lines := modified[fn]
 
 		ll := make([]int, 0, len(lines))
 
-		for i := range lines {
-			ll = append(ll, i)
+		for i, isZero := range lines {
+			if isZero {
+				ll = append(ll, i)
+			}
 		}
 
 		sort.Ints(ll)
@@ -123,6 +132,11 @@ func main() {
 
 		printNotice(fn, start, p)
 	}
+}
+
+func printNotTested(fn string) {
+	fmt.Println(fn, "not tested")
+	fmt.Printf("::notice file=%s::File is not covered by tests.\n", fn)
 }
 
 func printNotice(fn string, start, end int) {
