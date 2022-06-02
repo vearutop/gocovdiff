@@ -6,20 +6,26 @@ on:
       - master
       - main
   pull_request:
+
+# Cancel the workflow in progress in newer build is about to start.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 env:
   GO111MODULE: "on"
   RUN_BASE_COVERAGE: "on"  # Runs test for PR base in case base test coverage is missing.
-  COV_GO_VERSION: 1.17.x   # Version of Go to collect coverage
+  COV_GO_VERSION: 1.18.x   # Version of Go to collect coverage
 jobs:
   test:
     strategy:
       matrix:
-        go-version: [ 1.16.x, 1.17.x, tip ]
+        go-version: [ 1.16.x, 1.17.x, 1.18.x, tip ]
     runs-on: ubuntu-latest
     steps:
       - name: Install Go stable
         if: matrix.go-version != 'tip'
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go-version }}
       - name: Install Go tip
@@ -105,9 +111,10 @@ jobs:
           flags: unittests
 
       - name: Result
-        if: ${{ github.event.pull_request.base.sha }} != ''
+        if: ${{ github.event.pull_request.base.sha }}
         run: |
           go install .
+          git fetch origin master ${{ github.event.pull_request.base.sha }}
           git diff ${{ github.event.pull_request.base.sha }} > diff.txt
           gocovdiff -diff diff.txt -cov unit.coverprofile -mod $(go list -m)
           
