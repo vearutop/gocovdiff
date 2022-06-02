@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/waigani/diffparser"
 	"io/ioutil"
 	"log"
 	"os"
@@ -12,6 +11,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/waigani/diffparser"
 )
 
 func main() {
@@ -54,7 +55,7 @@ func main() {
 		for _, h := range f.Hunks {
 			for _, l := range h.NewRange.Lines {
 				lines[l.Number] = false
-				//println(f.NewName, l.Number, l.Content)
+				// println(f.NewName, l.Number, l.Content)
 			}
 		}
 
@@ -72,7 +73,7 @@ func main() {
 			return
 		}
 
-		//println("cov", fn, block.StartLine, block.EndLine)
+		// println("cov", fn, block.StartLine, block.EndLine)
 
 		for i := block.StartLine; i <= block.EndLine; i++ {
 			if block.Count > 0 {
