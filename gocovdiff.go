@@ -26,7 +26,7 @@ func main() {
 	flag.StringVar(&d, "diff", "", "Code git diff file")
 	flag.StringVar(&c, "cov", "coverage.txt", "Coverage file")
 	flag.StringVar(&m, "mod", "", "Module name")
-	flag.StringVar(&f, "func", "", "File to store function coverage report")
+	flag.StringVar(&f, "report", "", "File to store aggregated coverage report")
 
 	flag.Parse()
 
@@ -69,16 +69,21 @@ func main() {
 	}
 
 	testedFiles := map[string]bool{}
+	totStmt := 0
+	covStmt := 0
+	fileCoverage := map[string]stat{}
 
 	err = parseProfiles(c, func(fn string, block profileBlock) {
 		fn = strings.TrimPrefix(fn, m+"/")
 		testedFiles[fn] = true
+		fStat := fileCoverage[fn]
 
 		lines, ok := modified[fn]
 		if !ok {
 			return
 		}
 
+		stmtCaptured := false
 		for i := block.StartLine; i <= block.EndLine; i++ {
 			l, ok := lines[i]
 			if !ok {
@@ -86,9 +91,23 @@ func main() {
 			}
 
 			l.covered = block.Count
-			l.statements += block.NumStmt
+			if !stmtCaptured {
+				l.statements += block.NumStmt
+				totStmt += block.NumStmt
+				fStat.totStmt += block.NumStmt
+
+				if l.covered > 0 {
+					covStmt += block.NumStmt
+					fStat.covStmt += block.NumStmt
+				}
+
+				stmtCaptured = true
+			}
+
 			lines[i] = l
 		}
+
+		fileCoverage[fn] = fStat
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -101,7 +120,7 @@ func main() {
 
 	sort.Strings(files)
 
-	var functions []funcInfo
+	var functions []stat
 
 	for _, fn := range files {
 		if !testedFiles[fn] {
@@ -130,22 +149,42 @@ func main() {
 				}
 
 				if totStmt > 0 {
-					functions = append(functions, funcInfo{
+					functions = append(functions, stat{
 						name:       fu.name,
 						file:       fn,
+						line:       fu.startLine,
 						covPercent: float64(covStmt) / float64(totStmt) * 100,
 					})
 				}
 			}
 
 			sort.Slice(functions, func(i, j int) bool {
-				return functions[i].covPercent > functions[j].covPercent
+				fi := functions[i]
+				fj := functions[j]
+
+				if fi.file != fj.file {
+					return fi.file < fj.file
+				}
+
+				if fi.covPercent != fj.covPercent {
+					return fi.covPercent > fj.covPercent
+				}
+
+				return fi.line < fj.line
 			})
 
 			res := "| File | Function | Coverage |\n"
 			res += "| ---- | -------- | -------- |\n"
+			res += fmt.Sprintf("| Total | -- | %.2f%% |\n", float64(covStmt)/float64(totStmt)*100)
+
+			prevFile := ""
 			for _, fu := range functions {
-				res += fmt.Sprintf("| %s | %s | %.2f%% |\n", fu.file, fu.name, fu.covPercent)
+				if fu.file != prevFile {
+					fc := fileCoverage[fu.file]
+					res += fmt.Sprintf("| %s | %s | %.2f%% |\n", fu.file, "--", float64(fc.covStmt*100)/float64(fc.totStmt))
+				}
+				res += fmt.Sprintf("| %s:%d | %s | %.2f%% |\n", fu.file, fu.line, fu.name, fu.covPercent)
+				prevFile = fu.file
 			}
 
 			err = ioutil.WriteFile(f, []byte(res), 0600)
@@ -166,6 +205,7 @@ func main() {
 
 		p := ll[0]
 		start := 0
+		stmt := 0
 
 		for _, i := range ll {
 			if start == 0 {
@@ -173,11 +213,13 @@ func main() {
 			}
 
 			if i-p > 1 {
-				printNotice(fn, start, p)
+				printNotice(fn, start, p, stmt)
 
 				start = 0
+				stmt = 0
 			}
 
+			stmt += lines[i].statements
 			p = i
 		}
 
@@ -185,24 +227,26 @@ func main() {
 			start = p
 		}
 
-		printNotice(fn, start, p)
+		printNotice(fn, start, p, stmt)
 	}
 }
 
-type funcInfo struct {
-	name       string
-	file       string
-	covPercent float64
+type stat struct {
+	name             string
+	file             string
+	line             int
+	covPercent       float64
+	covStmt, totStmt int
 }
 
 func printNotTested(fn string) {
-	fmt.Println(fn, "not tested")
+	//fmt.Println(fn, "not tested")
 	fmt.Printf("::notice file=%s::File is not covered by tests.\n", fn)
 }
 
-func printNotice(fn string, start, end int) {
-	fmt.Println(fn, start, end)
-	fmt.Printf("::notice file=%s,line=%d,endLine=%d::Not covered by tests.\n", fn, start, end)
+func printNotice(fn string, start, end, stmt int) {
+	//fmt.Println(fn, start, end)
+	fmt.Printf("::notice file=%s,line=%d,endLine=%d::%d statement(s) not covered by tests.\n", fn, start, end, stmt)
 }
 
 // profileBlock represents a single block of profiling data.

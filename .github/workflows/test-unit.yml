@@ -94,10 +94,10 @@ jobs:
           go install .
           git fetch origin master ${{ github.event.pull_request.base.sha }}
           git diff ${{ github.event.pull_request.base.sha }} > diff.txt
-          gocovdiff -diff diff.txt -cov unit.coverprofile -mod $(go list -m) -func func.txt
-          FUNC=$(cat func.txt)
-          FUNC="${FUNC//$'\n'/%0A}"
-          echo "::set-output name=func::$FUNC"
+          gocovdiff -diff diff.txt -cov unit.coverprofile -mod $(go list -m) -report rep.txt
+          REP=$(cat rep.txt)
+          REP="${REP//$'\n'/%0A}"
+          echo "::set-output name=rep::$REP"
 
       - name: Comment Test Coverage
         continue-on-error: true
@@ -111,7 +111,7 @@ jobs:
             ${{ steps.test.outputs.total }}
             <details><summary>Coverage of changed lines in functions</summary>
             
-            ${{ steps.annotate.outputs.func }}
+            ${{ steps.annotate.outputs.rep }}
 
             </details>
             
