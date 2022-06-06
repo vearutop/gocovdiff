@@ -67,30 +67,33 @@ Also, you can comment on the pull request with the report.
 
       - name: Annotate missing test coverage
         id: annotate
-        if: github.event.pull_request.base.sha
+        if: github.event.pull_request.base.sha != ''
         run: |
           git fetch origin master ${{ github.event.pull_request.base.sha }}
-          curl -sLO https://github.com/vearutop/gocovdiff/releases/download/v1.0.0/linux_amd64.tar.gz && tar xf linux_amd64.tar.gz && echo "<to be filled>  gocovdiff" | shasum -c
+          curl -sLO https://github.com/vearutop/gocovdiff/releases/download/v1.0.0/linux_amd64.tar.gz && tar xf linux_amd64.tar.gz && echo "6b8bec07488b84e46c1b8993353323effe863493013309fd3df4f2cba9a2bb29  gocovdiff" | shasum -c
           REP=$(./gocovdiff -cov unit.coverprofile -gha-annotations gha-unit.txt)
+          echo "${REP}"
           REP="${REP//$'\n'/%0A}"
           cat gha-unit.txt
           echo "::set-output name=rep::$REP"
-
       - name: Comment Test Coverage
         continue-on-error: true
+        if: github.event.pull_request.base.sha != ''
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           header: unit-test
           message: |
             ### Unit Test Coverage
-
             <details><summary>Coverage of changed lines</summary>
             
             ${{ steps.annotate.outputs.rep }}
-
             </details>
+
 ```
+
+[Workflow example](https://github.com/bool64/dev/blob/v0.2.13/templates/github/workflows/test-unit.yml).
+
 
 ## Example 
 ```
