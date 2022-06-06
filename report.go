@@ -3,12 +3,20 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"sort"
 
 	"github.com/olekukonko/tablewriter"
 )
 
 func printReport(w io.Writer, covStmt, totStmt int, functions []stat, fileCoverage map[string]stat) {
+	if totStmt == 0 {
+		_, err := w.Write([]byte("No changes in testable statements.\n"))
+		if err != nil {
+			log.Fatal("failed to write report: ", err)
+		}
+	}
+
 	sort.Slice(functions, func(i, j int) bool {
 		fi := functions[i]
 		fj := functions[j]
