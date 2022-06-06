@@ -25,14 +25,14 @@ func printReport(w io.Writer, covStmt, totStmt int, functions []stat, fileCovera
 	})
 
 	data := make([][]string, 0, len(functions))
-	data = append(data, []string{"Total", "---", fmt.Sprintf("%.2f%%", float64(covStmt)/float64(totStmt)*100)})
+	data = append(data, []string{"Total", "", fmt.Sprintf("%.2f%%", float64(covStmt)/float64(totStmt)*100)})
 
 	prevFile := ""
 	for _, fu := range functions {
 		if fu.file != prevFile {
 			fc := fileCoverage[fu.file]
 
-			data = append(data, []string{fu.file, "---", fmt.Sprintf("%.2f%%", float64(fc.covStmt*100)/float64(fc.totStmt))})
+			data = append(data, []string{fu.file, "", fmt.Sprintf("%.2f%%", float64(fc.covStmt*100)/float64(fc.totStmt))})
 		}
 
 		data = append(data, []string{fmt.Sprintf("%s:%d", fu.file, fu.line), fu.name, fmt.Sprintf("%.2f%%", fu.covPercent)})

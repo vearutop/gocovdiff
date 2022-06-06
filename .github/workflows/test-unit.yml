@@ -108,7 +108,7 @@ jobs:
           message: |
             ### Unit Test Coverage
             ${{ steps.test.outputs.total }}
-            <details><summary>Coverage of changed lines in functions</summary>
+            <details><summary>Coverage of changed lines</summary>
             
             ${{ steps.annotate.outputs.rep }}
 
