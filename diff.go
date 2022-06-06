@@ -23,7 +23,6 @@ func gitDiff(forkPoint string) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to file fork point: %w", err)
 		}
-	} else {
 	}
 
 	o, err := exec.Command("git", "diff", forkPoint, "--no-color").CombinedOutput()

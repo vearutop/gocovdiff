@@ -3,13 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/bool64/dev/version"
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/bool64/dev/version"
 )
 
 type flags struct {
@@ -59,6 +59,7 @@ func main() {
 	}
 }
 
+// nolint:maintidx
 func run(f flags) (err error) {
 	if f.module == "" {
 		o, err := exec.Command("go", "list", "-m").CombinedOutput()
@@ -92,12 +93,13 @@ func run(f flags) (err error) {
 	}
 
 	modified := map[string]map[int]line{}
-	var excludeDirs []string
+	excludeDirs := []string(nil)
 
 	if f.excludeDirs != "" {
 		excludeDirs = strings.Split(f.excludeDirs, ",")
 	}
 
+fileLoop:
 	for _, f := range diff.Files {
 		if !strings.HasSuffix(f.NewName, ".go") || strings.HasSuffix(f.NewName, "_test.go") {
 			continue
@@ -105,7 +107,7 @@ func run(f flags) (err error) {
 
 		for _, e := range excludeDirs {
 			if strings.HasPrefix(f.NewName, e) {
-				continue
+				continue fileLoop
 			}
 		}
 
@@ -260,21 +262,4 @@ type stat struct {
 	line             int
 	covPercent       float64
 	covStmt, totStmt int
-}
-
-var isModuleDir = map[string]bool{}
-
-func isModule(dir string) bool {
-	if b, ok := isModuleDir[dir]; ok {
-		return b
-	}
-
-	_, err := os.Stat(filepath.Join(dir, "go.mod"))
-	if err == os.ErrNotExist {
-		isModuleDir[dir] = false
-
-		return false
-	}
-
-	return true
 }
