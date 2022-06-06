@@ -92,7 +92,7 @@ jobs:
         if: ${{ github.event.pull_request.base.sha }}
         run: |
           git fetch origin master ${{ github.event.pull_request.base.sha }}
-          git diff ${{ github.event.pull_request.base.sha }} > diff.txt
+          #git diff ${{ github.event.pull_request.base.sha }} > diff.txt
           REP=$(go run . -cov unit.coverprofile -gha-annotations gha-unit.txt)
           REP="${REP//$'\n'/%0A}"
           cat gha-unit.txt
