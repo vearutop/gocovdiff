@@ -91,12 +91,11 @@ jobs:
         id: annotate
         if: ${{ github.event.pull_request.base.sha }}
         run: |
-          go install .
           git fetch origin master ${{ github.event.pull_request.base.sha }}
           git diff ${{ github.event.pull_request.base.sha }} > diff.txt
-          gocovdiff -diff diff.txt -cov unit.coverprofile -mod $(go list -m) -report rep.txt
-          REP=$(cat rep.txt)
+          REP=$(go run . -cov unit.coverprofile -gha-annotations gha-unit.txt)
           REP="${REP//$'\n'/%0A}"
+          cat gha-unit.txt
           echo "::set-output name=rep::$REP"
 
       - name: Comment Test Coverage

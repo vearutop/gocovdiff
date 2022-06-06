@@ -15,16 +15,19 @@ import (
 // findFuncs parses the file and returns a slice of FuncExtent descriptors.
 func findFuncs(name string) ([]*FuncExtent, error) {
 	fset := token.NewFileSet()
+
 	parsedFile, err := parser.ParseFile(fset, name, nil, 0)
 	if err != nil {
 		return nil, err
 	}
+
 	visitor := &FuncVisitor{
 		fset:    fset,
 		name:    name,
 		astFile: parsedFile,
 	}
 	ast.Walk(visitor, visitor.astFile)
+
 	return visitor.funcs, nil
 }
 
@@ -47,8 +50,7 @@ type FuncVisitor struct {
 
 // Visit implements the ast.Visitor interface.
 func (v *FuncVisitor) Visit(node ast.Node) ast.Visitor {
-	switch n := node.(type) {
-	case *ast.FuncDecl:
+	if n, ok := node.(*ast.FuncDecl); ok {
 		start := v.fset.Position(n.Pos())
 		end := v.fset.Position(n.End())
 		fe := &FuncExtent{
@@ -60,5 +62,6 @@ func (v *FuncVisitor) Visit(node ast.Node) ast.Visitor {
 		}
 		v.funcs = append(v.funcs, fe)
 	}
+
 	return v
 }
