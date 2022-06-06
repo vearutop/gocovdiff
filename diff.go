@@ -10,20 +10,19 @@ import (
 	"github.com/waigani/diffparser"
 )
 
-func gitDiff() ([]byte, error) {
-	var (
-		forkPoint string
-		err       error
-	)
+func gitDiff(forkPoint string) ([]byte, error) {
+	var err error
 
-	if eventPath := os.Getenv("GITHUB_EVENT_PATH"); eventPath != "" {
-		forkPoint, err = forkPointFromGitHub(eventPath)
-	} else {
-		forkPoint, err = forkPointFromLocal()
-	}
+	if forkPoint == "" {
+		if eventPath := os.Getenv("GITHUB_EVENT_PATH"); eventPath != "" {
+			forkPoint, err = forkPointFromGitHub(eventPath)
+		} else {
+			forkPoint, err = forkPointFromLocal()
+		}
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to file fork point: %w", err)
+		if err != nil {
+			return nil, fmt.Errorf("failed to file fork point: %w", err)
+		}
 	}
 
 	o, err := exec.Command("git", "diff", forkPoint, "--no-color").CombinedOutput()
@@ -34,11 +33,11 @@ func gitDiff() ([]byte, error) {
 	return o, nil
 }
 
-func getDiff(diffFile string) (*diffparser.Diff, error) {
+func getDiff(diffFile string, parentCommit string) (*diffparser.Diff, error) {
 	var d []byte
 
 	if diffFile == "" {
-		o, err := gitDiff()
+		o, err := gitDiff(parentCommit)
 		if err != nil {
 			return nil, err
 		}

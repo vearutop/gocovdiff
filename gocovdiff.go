@@ -8,26 +8,39 @@ import (
 	"os/exec"
 	"sort"
 	"strings"
+
+	"github.com/bool64/dev/version"
 )
 
 type flags struct {
-	d string
-	c string
-	m string
-	f string
+	diffFile       string
+	parentCommit   string
+	covFile        string
+	module         string
+	ghaAnnotations string
+	excludeDirs    string
+	version        bool
 }
 
 func parseFlags() flags {
 	var f flags
 
-	flag.StringVar(&f.d, "diff", "", "Git diff file for changes (optional)")
-	flag.StringVar(&f.c, "cov", "coverage.txt", "Coverage file")
-	flag.StringVar(&f.m, "mod", "", "Module name (optional)")
-	flag.StringVar(&f.f, "gha-annotations", "", "File to store GitHub Actions annotations")
+	flag.StringVar(&f.diffFile, "diff", "", "Git diff file for changes (optional)")
+	flag.StringVar(&f.parentCommit, "parent", "", "Parent commit hash (optional)")
+	flag.StringVar(&f.covFile, "cov", "coverage.txt", "Coverage file")
+	flag.StringVar(&f.module, "mod", "", "Module name (optional)")
+	flag.StringVar(&f.ghaAnnotations, "gha-annotations", "", "File to store GitHub Actions annotations")
+	flag.StringVar(&f.excludeDirs, "exclude", "", "Exclude directories, comma separated (optional)")
+	flag.BoolVar(&f.version, "version", false, "Show version and exit")
 
 	flag.Parse()
 
-	if f.c == "" {
+	if f.version {
+		fmt.Println(version.Info().Version)
+		os.Exit(0)
+	}
+
+	if f.covFile == "" {
 		flag.Usage()
 		os.Exit(0)
 	}
@@ -46,25 +59,26 @@ func main() {
 	}
 }
 
+// nolint:maintidx
 func run(f flags) (err error) {
-	if f.m == "" {
+	if f.module == "" {
 		o, err := exec.Command("go", "list", "-m").CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("failed to get module name: %w", err)
 		}
 
-		f.m = strings.TrimSpace(string(o))
+		f.module = strings.TrimSpace(string(o))
 	}
 
-	diff, err := getDiff(f.d)
+	diff, err := getDiff(f.diffFile, f.parentCommit)
 	if err != nil {
 		return err
 	}
 
 	var ga githubAnnotator
 
-	if f.f != "" {
-		f, err := os.Create(f.f)
+	if f.ghaAnnotations != "" {
+		f, err := os.Create(f.ghaAnnotations)
 		if err != nil {
 			return fmt.Errorf("failed to create GitHub annotations file: %w", err)
 		}
@@ -79,10 +93,22 @@ func run(f flags) (err error) {
 	}
 
 	modified := map[string]map[int]line{}
+	excludeDirs := []string(nil)
 
+	if f.excludeDirs != "" {
+		excludeDirs = strings.Split(f.excludeDirs, ",")
+	}
+
+fileLoop:
 	for _, f := range diff.Files {
 		if !strings.HasSuffix(f.NewName, ".go") || strings.HasSuffix(f.NewName, "_test.go") {
 			continue
+		}
+
+		for _, e := range excludeDirs {
+			if strings.HasPrefix(f.NewName, e) {
+				continue fileLoop
+			}
 		}
 
 		lines := map[int]line{}
@@ -101,8 +127,8 @@ func run(f flags) (err error) {
 	covStmt := 0
 	fileCoverage := map[string]stat{}
 
-	err = parseProfiles(f.c, func(fn string, block profileBlock) {
-		fn = strings.TrimPrefix(fn, f.m+"/")
+	err = parseProfiles(f.covFile, func(fn string, block profileBlock) {
+		fn = strings.TrimPrefix(fn, f.module+"/")
 		testedFiles[fn] = true
 		fStat := fileCoverage[fn]
 
