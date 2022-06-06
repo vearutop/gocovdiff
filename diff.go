@@ -28,7 +28,7 @@ func gitDiff() ([]byte, error) {
 
 	o, err := exec.Command("git", "diff", forkPoint, "--no-color").CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("git diff %s --no-color: %w", forkPoint, err)
+		return nil, fmt.Errorf("git diff %s --no-color: %w\n%s", forkPoint, err, string(o))
 	}
 
 	return o, nil
