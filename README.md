@@ -3,7 +3,21 @@
 [![Build Status](https://github.com/vearutop/gocovdiff/workflows/test-unit/badge.svg)](https://github.com/vearutop/gocovdiff/actions?query=branch%3Amaster+workflow%3Atest-unit)
 [![Coverage Status](https://codecov.io/gh/vearutop/gocovdiff/branch/master/graph/badge.svg)](https://codecov.io/gh/vearutop/gocovdiff)
 
-A tool to annotate Go code coverage in GitHub pull requests.
+A tool to annotate Go code coverage for changed statements in GitHub pull requests.
+
+## Why?
+
+When code is changed or introduced in a pull request, it is often difficult to find out if changed statements are 
+sufficiently covered with tests. 
+
+> Make sure that frequently changing code is covered. While project wide goals above 90% are most likely not worth it, per-commit coverage goals of 99% are reasonable, and 90% is a good lower threshold. We need to ensure that our tests are not getting worse over time.
+
+https://testing.googleblog.com/2020/08/code-coverage-best-practices.html
+
+This tool analyzes changed lines (derived from `git diff`) against test coverage data and counts coverage ratio only in changed lines.
+The result is present as annotations pointing to uncovered lines and a summary grouped by file and function.
+
+There is a caveat, such approach would not show coverage change if a test was added or updated, but the tested code was not changed.
 
 ## Install
 
@@ -23,10 +37,16 @@ Usage of gocovdiff:
         Coverage file (default "coverage.txt")
   -diff string
         Git diff file for changes (optional)
+  -exclude string
+        Exclude directories, comma separated (optional)
   -gha-annotations string
         File to store GitHub Actions annotations
   -mod string
         Module name (optional)
+  -parent string
+        Parent commit hash (optional)
+  -version
+        Show version and exit
 ```
 
 ## GitHub Action
@@ -47,7 +67,7 @@ Also, you can comment on the pull request with the report.
 
       - name: Annotate missing test coverage
         id: annotate
-        if: ${{ github.event.pull_request.base.sha }}
+        if: github.event.pull_request.base.sha
         run: |
           git fetch origin master ${{ github.event.pull_request.base.sha }}
           curl -sLO https://github.com/vearutop/gocovdiff/releases/download/v1.0.0/linux_amd64.tar.gz && tar xf linux_amd64.tar.gz && echo "<to be filled>  gocovdiff" | shasum -c

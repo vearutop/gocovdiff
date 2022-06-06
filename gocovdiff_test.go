@@ -18,7 +18,8 @@ func TestRun(t *testing.T) {
 	}
 
 	err = run(flags{
-		c: "cover.out",
+		covFile:      "cover.out",
+		parentCommit: "HEAD^",
 	})
 
 	if err != nil {
