@@ -66,7 +66,7 @@ jobs:
         id: annotate
         if: matrix.go-version == env.COV_GO_VERSION && github.event.pull_request.base.sha != ''
         run: |
-          REP=$(go run . -cov unit.coverprofile -gha-annotations gha-unit.txt)
+          REP=$(go run . -cov unit.coverprofile -gha-annotations gha-unit.txt -exclude _testdata)
           echo ${REP}
           REP="${REP//$'\n'/%0A}"
           cat gha-unit.txt
