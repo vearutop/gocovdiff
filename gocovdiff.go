@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -54,13 +55,13 @@ type line struct {
 }
 
 func main() {
-	if err := run(parseFlags()); err != nil {
+	if err := run(parseFlags(), os.Stdout); err != nil {
 		log.Fatal(err)
 	}
 }
 
 // nolint:maintidx
-func run(f flags) (err error) {
+func run(f flags, report io.Writer) (err error) {
 	if f.module == "" {
 		o, err := exec.Command("go", "list", "-m").CombinedOutput()
 		if err != nil {
@@ -251,7 +252,7 @@ fileLoop:
 		}
 	}
 
-	printReport(os.Stdout, covStmt, totStmt, functions, fileCoverage)
+	printReport(report, covStmt, totStmt, functions, fileCoverage)
 
 	return nil
 }
