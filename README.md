@@ -144,7 +144,20 @@ gocovdiff -func-cov cur.func.txt -func-base-cov base.func.txt
 ```
 |     File      | Function | Base Coverage | Current Coverage |
 |---------------|----------|---------------|------------------|
-| Total         |          | 70.0          | 56.2             |
-| sample/bar.go | Bar      | 80.0          | 71.4             |
-| sample/foo.go | foo      | 60.0          | 44.4             |
+| Total         |          | 70.0%         | 56.2% (-13.80%)  |
+| sample/bar.go | Bar      | 80.0%         | 71.4% (-8.60%)   |
+| sample/foo.go | foo      | 60.0%         | 44.4% (-15.60%)  |
+```
+
+### Filter under covered functions from func coverage
+
+```
+go tool cover -func=unit.coverprofile > cur.func.txt
+gocovdiff -func-cov cur.func.txt -func-max-cov 70
+```
+
+```
+|     File      | Function | Coverage |
+|---------------|----------|----------|
+| sample/foo.go | foo      | 44.4%    |
 ```
