@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -20,6 +21,8 @@ type flags struct {
 	module         string
 	ghaAnnotations string
 	excludeDirs    string
+	funcCov        string
+	funcBaseCov    string
 	version        bool
 }
 
@@ -32,6 +35,10 @@ func parseFlags() flags {
 	flag.StringVar(&f.module, "mod", "", "Module name (optional)")
 	flag.StringVar(&f.ghaAnnotations, "gha-annotations", "", "File to store GitHub Actions annotations")
 	flag.StringVar(&f.excludeDirs, "exclude", "", "Exclude directories, comma separated (optional)")
+
+	flag.StringVar(&f.funcCov, "func-cov", "", "Current func coverage from 'go tool cover -func', requires -func-base-cov (optional)")
+	flag.StringVar(&f.funcBaseCov, "func-base-cov", "", "Base func coverage from 'go tool cover -func', requires -func-cov (optional)")
+
 	flag.BoolVar(&f.version, "version", false, "Show version and exit")
 
 	flag.Parse()
@@ -44,6 +51,13 @@ func parseFlags() flags {
 	if f.covFile == "" {
 		flag.Usage()
 		os.Exit(0)
+	}
+
+	if f.funcCov != "" || f.funcBaseCov != "" {
+		if f.funcCov == "" || f.funcBaseCov == "" {
+			flag.Usage()
+			os.Exit(1)
+		}
 	}
 
 	return f
@@ -62,6 +76,20 @@ func main() {
 
 // nolint:maintidx
 func run(f flags, report io.Writer) (err error) {
+	if f.funcCov != "" || f.funcBaseCov != "" {
+		base, err := ioutil.ReadFile(f.funcBaseCov)
+		if err != nil {
+			return fmt.Errorf("failed to read base coverage file: %w", err)
+		}
+
+		cur, err := ioutil.ReadFile(f.funcCov)
+		if err != nil {
+			return fmt.Errorf("failed to read current coverage file: %w", err)
+		}
+
+		return reportCoverFuncDiff(report, base, cur)
+	}
+
 	if f.module == "" {
 		o, err := exec.Command("go", "list", "-m").CombinedOutput()
 		if err != nil {
