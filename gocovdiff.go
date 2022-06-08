@@ -22,6 +22,7 @@ type flags struct {
 	ghaAnnotations string
 	excludeDirs    string
 	funcCov        string
+	funcMaxCov     float64
 	funcBaseCov    string
 	version        bool
 }
@@ -36,8 +37,9 @@ func parseFlags() flags {
 	flag.StringVar(&f.ghaAnnotations, "gha-annotations", "", "File to store GitHub Actions annotations")
 	flag.StringVar(&f.excludeDirs, "exclude", "", "Exclude directories, comma separated (optional)")
 
-	flag.StringVar(&f.funcCov, "func-cov", "", "Current func coverage from 'go tool cover -func', requires -func-base-cov (optional)")
+	flag.StringVar(&f.funcCov, "func-cov", "", "Current func coverage from 'go tool cover -func', requires -func-base-cov or -func-max-cov (optional)")
 	flag.StringVar(&f.funcBaseCov, "func-base-cov", "", "Base func coverage from 'go tool cover -func', requires -func-cov (optional)")
+	flag.Float64Var(&f.funcMaxCov, "func-max-cov", 0, "Max func coverage from 'go tool cover -func' to keep in report of undercovered functions, requires -func-cov (optional)")
 
 	flag.BoolVar(&f.version, "version", false, "Show version and exit")
 
@@ -53,11 +55,16 @@ func parseFlags() flags {
 		os.Exit(0)
 	}
 
-	if f.funcCov != "" || f.funcBaseCov != "" {
+	if f.funcMaxCov == 0 && (f.funcCov != "" || f.funcBaseCov != "") {
 		if f.funcCov == "" || f.funcBaseCov == "" {
 			flag.Usage()
 			os.Exit(1)
 		}
+	}
+
+	if f.funcMaxCov > 0 && f.funcCov == "" {
+		flag.Usage()
+		os.Exit(1)
 	}
 
 	return f
@@ -76,7 +83,16 @@ func main() {
 
 // nolint:maintidx
 func run(f flags, report io.Writer) (err error) {
-	if f.funcCov != "" || f.funcBaseCov != "" {
+	if f.funcMaxCov > 0 && f.funcCov != "" {
+		cur, err := ioutil.ReadFile(f.funcCov)
+		if err != nil {
+			return fmt.Errorf("failed to read current coverage file: %w", err)
+		}
+
+		return reportUndercoveredFuncs(report, f.funcMaxCov, cur)
+	}
+
+	if f.funcCov != "" && f.funcBaseCov != "" {
 		base, err := ioutil.ReadFile(f.funcBaseCov)
 		if err != nil {
 			return fmt.Errorf("failed to read base coverage file: %w", err)

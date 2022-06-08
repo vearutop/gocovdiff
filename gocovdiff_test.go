@@ -70,10 +70,34 @@ func TestRun_funcCov(t *testing.T) {
 		funcBaseCov: "base.func.txt",
 	}, report))
 
+	println(report.String())
+
 	assert.Equal(t, `|     File      | Function | Base Coverage | Current Coverage |
 |---------------|----------|---------------|------------------|
-| Total         |          | 70.0          | 56.2             |
-| sample/bar.go | Bar      | 80.0          | 71.4             |
-| sample/foo.go | foo      | 60.0          | 44.4             |
+| Total         |          | 70.0%         | 56.2% (-13.80%)  |
+| sample/bar.go | Bar      | 80.0%         | 71.4% (-8.60%)   |
+| sample/foo.go | foo      | 60.0%         | 44.4% (-15.60%)  |
+`, report.String())
+}
+
+func TestRun_funcUndercovered(t *testing.T) {
+	require.NoError(t, os.Chdir("_testdata"))
+
+	defer func() {
+		require.NoError(t, os.Chdir(".."))
+	}()
+
+	report := bytes.NewBuffer(nil)
+
+	require.NoError(t, run(flags{
+		funcCov:    "cur.func.txt",
+		funcMaxCov: 70,
+	}, report))
+
+	println(report.String())
+
+	assert.Equal(t, `|     File      | Function | Coverage |
+|---------------|----------|----------|
+| sample/foo.go | foo      | 44.4%    |
 `, report.String())
 }

@@ -4,12 +4,51 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
 )
+
+func reportUndercoveredFuncs(w io.Writer, max float64, cur []byte) error {
+	curCov, err := parseCoverFunc(cur)
+	if err != nil {
+		return fmt.Errorf("failed to parse current func coverage: %w", err)
+	}
+
+	data := make([][]string, 0, len(curCov))
+
+	for _, cf := range curCov {
+		if cf.funcname == "(statements)" {
+			continue
+		}
+
+		c, err := strconv.ParseFloat(cf.percent, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse percent %q: %w", cf.percent, err)
+		}
+
+		if c > max {
+			continue
+		}
+
+		data = append(data, []string{cf.filename, cf.funcname, cf.percent + "%"})
+	}
+
+	table := tablewriter.NewWriter(w)
+	table.SetAutoFormatHeaders(false)
+	table.SetHeader([]string{"File", "Function", "Coverage"})
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table.SetBorders(tablewriter.Border{Left: true, Top: false, Right: true, Bottom: false})
+	table.SetCenterSeparator("|")
+	table.AppendBulk(data) // Add Bulk Data
+	table.Render()
+
+	return nil
+}
 
 func reportCoverFuncDiff(w io.Writer, base, cur []byte) error {
 	baseCov, err := parseCoverFunc(base)
@@ -55,11 +94,11 @@ func reportCoverFuncDiff(w io.Writer, base, cur []byte) error {
 	data := make([][]string, 0, len(funcs))
 
 	cf := total
-	data = append(data, []string{"Total", "", cf.percent, cf.curPercent})
+	data = append(data, []string{"Total", "", cf.percent + "%", fmtCov(cf.percent, cf.curPercent)})
 
 	for _, fn := range funcs {
 		cf := res[fn]
-		data = append(data, []string{cf.filename, cf.funcname, cf.percent, cf.curPercent})
+		data = append(data, []string{cf.filename, cf.funcname, cf.percent + "%", fmtCov(cf.percent, cf.curPercent)})
 	}
 
 	table := tablewriter.NewWriter(w)
@@ -72,6 +111,25 @@ func reportCoverFuncDiff(w io.Writer, base, cur []byte) error {
 	table.Render()
 
 	return nil
+}
+
+func fmtCov(base, cur string) string {
+	b, err := strconv.ParseFloat(base, 64)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	c, err := strconv.ParseFloat(cur, 64)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	d := fmt.Sprintf("%.2f%%", c-b)
+	if c-b > 0 {
+		d = "+" + d
+	}
+
+	return cur + "% (" + d + ")"
 }
 
 // coverFuncLineRe represents a line in a `go tool cover -func` output.
