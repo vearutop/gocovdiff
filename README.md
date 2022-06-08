@@ -18,6 +18,7 @@ This tool analyzes changed lines (derived from `git diff`) against test coverage
 The result is present as annotations pointing to uncovered lines and a summary grouped by file and function.
 
 There is a caveat, such approach would not show coverage change if a test was added or updated, but the tested code was not changed.
+This case can be handled by reporting global function coverage diff against base (`-func-base-cov` and `-func-cov`). 
 
 ## Install
 
@@ -39,6 +40,10 @@ Usage of gocovdiff:
         Git diff file for changes (optional)
   -exclude string
         Exclude directories, comma separated (optional)
+  -func-base-cov string
+        Base func coverage from 'go tool cover -func', requires -func-cov (optional)
+  -func-cov string
+        Current func coverage from 'go tool cover -func', requires -func-base-cov (optional)
   -gha-annotations string
         File to store GitHub Actions annotations
   -mod string
@@ -98,6 +103,8 @@ Also, you can comment on the pull request with the report.
 ## Example 
 ```
 make test && gocovdiff -cov unit.coverprofile
+```
+```
 Running unit tests.
 ok      github.com/vearutop/gocovdiff   0.738s  coverage: 71.9% of statements
 |           File           |      Function       | Coverage |
@@ -124,5 +131,20 @@ ok      github.com/vearutop/gocovdiff   0.738s  coverage: 71.9% of statements
 | profile.go:86            | toInt               | 75.00%   |
 | report.go                |                     | 96.00%   |
 | report.go:11             | printReport         | 92.00%   |
+```
 
+### Format func coverage diff against base coverage
+
+```
+git checkout master && make test && go tool cover -func=unit.coverprofile > base.func.txt 
+git checkout my-branch && make test && go tool cover -func=unit.coverprofile > cur.func.txt
+gocovdiff -func-cov cur.func.txt -func-base-cov base.func.txt
+```
+
+```
+|     File      | Function | Base Coverage | Current Coverage |
+|---------------|----------|---------------|------------------|
+| Total         |          | 70.0          | 56.2             |
+| sample/bar.go | Bar      | 80.0          | 71.4             |
+| sample/foo.go | foo      | 60.0          | 44.4             |
 ```
