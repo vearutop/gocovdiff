@@ -98,7 +98,20 @@ func reportCoverFuncDiff(w io.Writer, base, cur []byte) error {
 
 	for _, fn := range funcs {
 		cf := res[fn]
+
+		if cf.percent == cf.curPercent {
+			continue
+		}
+
 		data = append(data, []string{cf.filename, cf.funcname, cf.percent + "%", fmtCov(cf.percent, cf.curPercent)})
+	}
+
+	if len(data) == 1 {
+		if _, err := w.Write([]byte("No changes in coverage.\n")); err != nil {
+			return fmt.Errorf("failed to write to coverage change report: %w", err)
+		}
+
+		return nil
 	}
 
 	table := tablewriter.NewWriter(w)
