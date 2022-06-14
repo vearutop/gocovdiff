@@ -36,6 +36,8 @@ gocovdiff -help
 Usage of gocovdiff:
   -cov string
         Coverage file (default "coverage.txt")
+  -delta-cov-file string
+        File to store delta coverage message
   -diff string
         Git diff file for changes (optional)
   -exclude string
@@ -43,13 +45,17 @@ Usage of gocovdiff:
   -func-base-cov string
         Base func coverage from 'go tool cover -func', requires -func-cov (optional)
   -func-cov string
-        Current func coverage from 'go tool cover -func', requires -func-base-cov (optional)
+        Current func coverage from 'go tool cover -func', requires -func-base-cov or -func-max-cov (optional)
+  -func-max-cov float
+        Max func coverage from 'go tool cover -func' to keep in report of undercovered functions, requires -func-cov (optional)
   -gha-annotations string
         File to store GitHub Actions annotations
   -mod string
         Module name (optional)
   -parent string
         Parent commit hash (optional)
+  -target-delta-cov float
+        Target coverage of changed lines, to be used together with -delta-cov-file (default 80)
   -version
         Show version and exit
 ```
