@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/bool64/dev/version"
+	"github.com/waigani/diffparser"
 )
 
 type flags struct {
@@ -24,6 +25,8 @@ type flags struct {
 	funcCov        string
 	funcMaxCov     float64
 	funcBaseCov    string
+	targetDeltaCov float64
+	deltaCovFile   string
 	version        bool
 }
 
@@ -40,6 +43,9 @@ func parseFlags() flags {
 	flag.StringVar(&f.funcCov, "func-cov", "", "Current func coverage from 'go tool cover -func', requires -func-base-cov or -func-max-cov (optional)")
 	flag.StringVar(&f.funcBaseCov, "func-base-cov", "", "Base func coverage from 'go tool cover -func', requires -func-cov (optional)")
 	flag.Float64Var(&f.funcMaxCov, "func-max-cov", 0, "Max func coverage from 'go tool cover -func' to keep in report of undercovered functions, requires -func-cov (optional)")
+
+	flag.Float64Var(&f.targetDeltaCov, "target-delta-cov", 80, "Target coverage of changed lines, to be used together with -delta-cov-file")
+	flag.StringVar(&f.deltaCovFile, "delta-cov-file", "", "File to store delta coverage message")
 
 	flag.BoolVar(&f.version, "version", false, "Show version and exit")
 
@@ -160,6 +166,10 @@ fileLoop:
 
 		for _, h := range f.Hunks {
 			for _, l := range h.NewRange.Lines {
+				if l.Mode == diffparser.UNCHANGED {
+					continue
+				}
+
 				lines[l.Number] = line{covered: -1}
 			}
 		}
@@ -297,6 +307,30 @@ fileLoop:
 	}
 
 	printReport(report, covStmt, totStmt, functions, fileCoverage)
+
+	if f.deltaCovFile != "" {
+		deltaCov := float64(covStmt) / float64(totStmt) * 100
+
+		df, err := os.Create(f.deltaCovFile)
+		if err != nil {
+			return fmt.Errorf("failed to create delta coverage file: %w", err)
+		}
+
+		defer func() {
+			if err := df.Close(); err != nil {
+				log.Fatal("failed to close delta coverage file: ", err)
+			}
+		}()
+
+		res := fmt.Sprintf("changed lines: (statements) %.2f%%", deltaCov)
+		if deltaCov < f.targetDeltaCov {
+			res += fmt.Sprintf(" (coverage is less than %.2f%%, consider testing the changes more thoroughly)", f.targetDeltaCov)
+		}
+
+		if _, err = df.Write([]byte(res)); err != nil {
+			return fmt.Errorf("failed to write to delta coverage file: %w", err)
+		}
+	}
 
 	return nil
 }

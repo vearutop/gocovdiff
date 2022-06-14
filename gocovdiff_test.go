@@ -29,15 +29,17 @@ func TestRun(t *testing.T) {
 		diffFile:       "diff.txt",
 		covFile:        "coverage.txt",
 		ghaAnnotations: "gha.txt",
+		deltaCovFile:   "delta.txt",
+		targetDeltaCov: 81.5,
 	}, report))
 
 	assert.Equal(t, `|   File   | Function | Coverage |
 |----------|----------|----------|
-| Total    |          | 53.85%   |
-| bar.go   |          | 80.00%   |
-| bar.go:3 | Bar      | 60.00%   |
-| foo.go   |          | 37.50%   |
-| foo.go:5 | foo      | 25.00%   |
+| Total    |          | 33.33%   |
+| bar.go   |          | 50.00%   |
+| bar.go:3 | Bar      | 0.00%    |
+| foo.go   |          | 25.00%   |
+| foo.go:5 | foo      | 0.00%    |
 `, report.String())
 
 	gha, err := ioutil.ReadFile("gha.txt")
@@ -45,15 +47,16 @@ func TestRun(t *testing.T) {
 
 	assert.Equal(t, `bar.go:8,10: 2 statement(s) not covered by tests
 ::notice file=bar.go,line=8,endLine=10::2 statement(s) not covered by tests.
-foo.go:6,8: 1 statement(s) not covered by tests
-::notice file=foo.go,line=6,endLine=8::1 statement(s) not covered by tests.
-foo.go:10,12: 2 statement(s) not covered by tests
-::notice file=foo.go,line=10,endLine=12::2 statement(s) not covered by tests.
+foo.go:6,8: 2 statement(s) not covered by tests
+::notice file=foo.go,line=6,endLine=8::2 statement(s) not covered by tests.
 foo.go:18,20: 2 statement(s) not covered by tests
 ::notice file=foo.go,line=18,endLine=20::2 statement(s) not covered by tests.
-foo.go:22,22: 1 statement(s) not covered by tests
-::notice file=foo.go,line=22,endLine=22::1 statement(s) not covered by tests.
 `, string(gha))
+
+	delta, err := ioutil.ReadFile("delta.txt")
+	require.NoError(t, err)
+
+	assert.Equal(t, "changed lines: (statements) 33.33% (coverage is less than 81.50%, consider testing the changes more thoroughly)", string(delta))
 }
 
 func TestRun_funcCov(t *testing.T) {
@@ -93,8 +96,6 @@ func TestRun_funcUndercovered(t *testing.T) {
 		funcCov:    "cur.func.txt",
 		funcMaxCov: 70,
 	}, report))
-
-	println(report.String())
 
 	assert.Equal(t, `|     File      | Function | Coverage |
 |---------------|----------|----------|
