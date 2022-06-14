@@ -15,6 +15,8 @@ func printReport(w io.Writer, covStmt, totStmt int, functions []stat, fileCovera
 		if err != nil {
 			log.Fatal("failed to write report: ", err)
 		}
+
+		return
 	}
 
 	sort.Slice(functions, func(i, j int) bool {

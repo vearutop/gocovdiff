@@ -309,8 +309,6 @@ fileLoop:
 	printReport(report, covStmt, totStmt, functions, fileCoverage)
 
 	if f.deltaCovFile != "" {
-		deltaCov := float64(covStmt) / float64(totStmt) * 100
-
 		df, err := os.Create(f.deltaCovFile)
 		if err != nil {
 			return fmt.Errorf("failed to create delta coverage file: %w", err)
@@ -322,9 +320,14 @@ fileLoop:
 			}
 		}()
 
-		res := fmt.Sprintf("changed lines: (statements) %.2f%%", deltaCov)
-		if deltaCov < f.targetDeltaCov {
-			res += fmt.Sprintf(" (coverage is less than %.2f%%, consider testing the changes more thoroughly)", f.targetDeltaCov)
+		res := ""
+
+		if totStmt > 0 {
+			deltaCov := float64(covStmt) / float64(totStmt) * 100
+			res = fmt.Sprintf("changed lines: (statements) %.2f%%", deltaCov)
+			if deltaCov < f.targetDeltaCov {
+				res += fmt.Sprintf(" (coverage is less than %.2f%%, consider testing the changes more thoroughly)", f.targetDeltaCov)
+			}
 		}
 
 		if _, err = df.Write([]byte(res)); err != nil {
