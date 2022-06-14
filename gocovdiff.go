@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/bool64/dev/version"
+	"github.com/waigani/diffparser"
 )
 
 type flags struct {
@@ -165,6 +166,10 @@ fileLoop:
 
 		for _, h := range f.Hunks {
 			for _, l := range h.NewRange.Lines {
+				if l.Mode == diffparser.UNCHANGED {
+					continue
+				}
+
 				lines[l.Number] = line{covered: -1}
 			}
 		}
