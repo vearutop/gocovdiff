@@ -29,6 +29,8 @@ func TestRun(t *testing.T) {
 		diffFile:       "diff.txt",
 		covFile:        "coverage.txt",
 		ghaAnnotations: "gha.txt",
+		deltaCovFile:   "delta.txt",
+		targetDeltaCov: 81.5,
 	}, report))
 
 	assert.Equal(t, `|   File   | Function | Coverage |
@@ -54,6 +56,11 @@ foo.go:18,20: 2 statement(s) not covered by tests
 foo.go:22,22: 1 statement(s) not covered by tests
 ::notice file=foo.go,line=22,endLine=22::1 statement(s) not covered by tests.
 `, string(gha))
+
+	delta, err := ioutil.ReadFile("delta.txt")
+	require.NoError(t, err)
+
+	assert.Equal(t, "changed lines: (statements) 53.85% (coverage is less than 81.50%, consider testing the changes more thoroughly)", string(delta))
 }
 
 func TestRun_funcCov(t *testing.T) {
@@ -93,8 +100,6 @@ func TestRun_funcUndercovered(t *testing.T) {
 		funcCov:    "cur.func.txt",
 		funcMaxCov: 70,
 	}, report))
-
-	println(report.String())
 
 	assert.Equal(t, `|     File      | Function | Coverage |
 |---------------|----------|----------|
