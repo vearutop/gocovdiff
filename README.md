@@ -81,7 +81,7 @@ Also, you can comment on the pull request with the report.
         if: github.event.pull_request.base.sha != ''
         run: |
           git fetch origin master ${{ github.event.pull_request.base.sha }}
-          curl -sLO https://github.com/vearutop/gocovdiff/releases/download/v1.3.3/linux_amd64.tar.gz && tar xf linux_amd64.tar.gz && echo "5408045c76208635f1aedf895f79e9e809dc3c42c961e3b20db8119174cffcf5  gocovdiff" | shasum -c
+          curl -sLO https://github.com/vearutop/gocovdiff/releases/download/v1.3.4/linux_amd64.tar.gz && tar xf linux_amd64.tar.gz && echo "b351c67526eefeb0671c82e9271ae984875865eed19e911f40f78348cb98347c  gocovdiff" | shasum -c
           REP=$(./gocovdiff -cov unit.coverprofile -gha-annotations gha-unit.txt)
           echo "${REP}"
           REP="${REP//$'\n'/%0A}"
