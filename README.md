@@ -81,7 +81,7 @@ Also, you can comment on the pull request with the report.
         if: github.event.pull_request.base.sha != ''
         run: |
           git fetch origin master ${{ github.event.pull_request.base.sha }}
-          curl -sLO https://github.com/vearutop/gocovdiff/releases/download/v1.0.0/linux_amd64.tar.gz && tar xf linux_amd64.tar.gz && echo "6b8bec07488b84e46c1b8993353323effe863493013309fd3df4f2cba9a2bb29  gocovdiff" | shasum -c
+          curl -sLO https://github.com/vearutop/gocovdiff/releases/download/v1.3.2/linux_amd64.tar.gz && tar xf linux_amd64.tar.gz && echo "78146b31ec37ac8037a25d33b0f3c70c85adb0f8b682441b04b3daa518eaa489  gocovdiff" | shasum -c
           REP=$(./gocovdiff -cov unit.coverprofile -gha-annotations gha-unit.txt)
           echo "${REP}"
           REP="${REP//$'\n'/%0A}"
@@ -103,7 +103,7 @@ Also, you can comment on the pull request with the report.
 
 ```
 
-[Workflow example](https://github.com/bool64/dev/blob/v0.2.13/templates/github/workflows/test-unit.yml).
+[Workflow example](https://github.com/bool64/dev/blob/v0.2.15/templates/github/workflows/test-unit.yml).
 
 
 ## Example 
