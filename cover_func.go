@@ -64,7 +64,7 @@ func reportCoverFuncDiff(w io.Writer, base, cur []byte) error {
 	res := make(map[string]coverFunc, len(curCov))
 
 	for _, cf := range baseCov {
-		cf.curPercent = "0"
+		cf.curPercent = "-"
 		res[cf.filename+":"+cf.funcname] = cf
 	}
 
@@ -75,7 +75,7 @@ func reportCoverFuncDiff(w io.Writer, base, cur []byte) error {
 		base.curPercent = cf.percent
 
 		if base.percent == "" {
-			base.percent = "0"
+			base.percent = "-"
 		}
 
 		res[cf.filename+":"+cf.funcname] = base
@@ -103,7 +103,14 @@ func reportCoverFuncDiff(w io.Writer, base, cur []byte) error {
 			continue
 		}
 
-		data = append(data, []string{cf.filename, cf.funcname, cf.percent + "%", fmtCov(cf.percent, cf.curPercent)})
+		switch {
+		case cf.curPercent == "-":
+			data = append(data, []string{cf.filename, cf.funcname, cf.percent + "%", "no function"})
+		case cf.percent == "-":
+			data = append(data, []string{cf.filename, cf.funcname, "no function", cf.curPercent + "%"})
+		default:
+			data = append(data, []string{cf.filename, cf.funcname, cf.percent + "%", fmtCov(cf.percent, cf.curPercent)})
+		}
 	}
 
 	if len(data) == 1 {
@@ -137,7 +144,7 @@ func fmtCov(base, cur string) string {
 		log.Fatal(err)
 	}
 
-	d := fmt.Sprintf("%.2f%%", c-b)
+	d := fmt.Sprintf("%.1f%%", c-b)
 	if c-b > 0 {
 		d = "+" + d
 	}
