@@ -1,4 +1,5 @@
 sample/bar.go:3:	Bar		80.0%
 sample/foo.go:3:	foo		60.0%
 sample/baz.go:3:	baz		60.0%
+sample/gone.go:3:	gone		60.0%
 total:			(statements)	70.0%

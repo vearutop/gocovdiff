@@ -327,10 +327,10 @@ fileLoop:
 
 	if totStmt > 0 {
 		deltaCov := float64(covStmt) / float64(totStmt) * 100
-		res = fmt.Sprintf("changed lines: (statements) %.2f%%", deltaCov)
+		res = fmt.Sprintf("changed lines: (statements) %.1f%%", deltaCov)
 
 		if deltaCov < f.targetDeltaCov {
-			res += fmt.Sprintf(" (coverage is less than %.2f%%, consider testing the changes more thoroughly)", f.targetDeltaCov)
+			res += fmt.Sprintf(", coverage is less than %.1f%%, consider testing the changes more thoroughly", f.targetDeltaCov)
 		}
 	}
 

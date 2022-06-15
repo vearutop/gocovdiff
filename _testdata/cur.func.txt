@@ -1,4 +1,5 @@
 sample/bar.go:3:	Bar		71.4%
 sample/foo.go:5:	foo		44.4%
 sample/baz.go:3:	baz		60.0%
+sample/added.go:3:	added		60.0%
 total:			(statements)	56.2%

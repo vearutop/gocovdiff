@@ -35,11 +35,11 @@ func TestRun(t *testing.T) {
 
 	assert.Equal(t, `|   File   | Function | Coverage |
 |----------|----------|----------|
-| Total    |          | 33.33%   |
-| bar.go   |          | 50.00%   |
-| bar.go:3 | Bar      | 0.00%    |
-| foo.go   |          | 25.00%   |
-| foo.go:5 | foo      | 0.00%    |
+| Total    |          | 33.3%    |
+| bar.go   |          | 50.0%    |
+| bar.go:3 | Bar      | 0.0%     |
+| foo.go   |          | 25.0%    |
+| foo.go:5 | foo      | 0.0%     |
 `, report.String())
 
 	gha, err := ioutil.ReadFile("gha.txt")
@@ -56,7 +56,7 @@ foo.go:18,20: 2 statement(s) not covered by tests
 	delta, err := ioutil.ReadFile("delta.txt")
 	require.NoError(t, err)
 
-	assert.Equal(t, "changed lines: (statements) 33.33% (coverage is less than 81.50%, consider testing the changes more thoroughly)", string(delta))
+	assert.Equal(t, "changed lines: (statements) 33.3%, coverage is less than 81.5%, consider testing the changes more thoroughly", string(delta))
 }
 
 func TestRun_funcCov(t *testing.T) {
@@ -73,11 +73,13 @@ func TestRun_funcCov(t *testing.T) {
 		funcBaseCov: "base.func.txt",
 	}, report))
 
-	assert.Equal(t, `|     File      | Function | Base Coverage | Current Coverage |
-|---------------|----------|---------------|------------------|
-| Total         |          | 70.0%         | 56.2% (-13.80%)  |
-| sample/bar.go | Bar      | 80.0%         | 71.4% (-8.60%)   |
-| sample/foo.go | foo      | 60.0%         | 44.4% (-15.60%)  |
+	assert.Equal(t, `|      File       | Function | Base Coverage | Current Coverage |
+|-----------------|----------|---------------|------------------|
+| Total           |          | 70.0%         | 56.2% (-13.8%)   |
+| sample/added.go | added    | no function   | 60.0%            |
+| sample/bar.go   | Bar      | 80.0%         | 71.4% (-8.6%)    |
+| sample/foo.go   | foo      | 60.0%         | 44.4% (-15.6%)   |
+| sample/gone.go  | gone     | 60.0%         | no function      |
 `, report.String())
 }
 
@@ -99,7 +101,7 @@ func TestRun_funcCov_noChanges(t *testing.T) {
 `, report.String())
 }
 
-func TestRun_funcUndercovered(t *testing.T) {
+func TestRun_funcUnderCovered(t *testing.T) {
 	require.NoError(t, os.Chdir("_testdata"))
 
 	defer func() {
@@ -113,9 +115,10 @@ func TestRun_funcUndercovered(t *testing.T) {
 		funcMaxCov: 70,
 	}, report))
 
-	assert.Equal(t, `|     File      | Function | Coverage |
-|---------------|----------|----------|
-| sample/foo.go | foo      | 44.4%    |
-| sample/baz.go | baz      | 60.0%    |
+	assert.Equal(t, `|      File       | Function | Coverage |
+|-----------------|----------|----------|
+| sample/foo.go   | foo      | 44.4%    |
+| sample/baz.go   | baz      | 60.0%    |
+| sample/added.go | added    | 60.0%    |
 `, report.String())
 }
