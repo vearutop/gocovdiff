@@ -59,6 +59,46 @@ foo.go:18,20: 2 statement(s) not covered by tests
 	assert.Equal(t, "changed lines: (statements) 33.3%, coverage is less than 81.5%, consider testing the changes more thoroughly", string(delta))
 }
 
+func TestRun_excludeFiles(t *testing.T) {
+	require.NoError(t, os.Chdir("_testdata"))
+
+	defer func() {
+		require.NoError(t, os.Chdir(".."))
+	}()
+
+	report := bytes.NewBuffer(nil)
+
+	require.NoError(t, run(flags{
+		diffFile:       "diff.txt",
+		covFile:        "coverage.txt",
+		ghaAnnotations: "gha.txt",
+		deltaCovFile:   "delta.txt",
+		targetDeltaCov: 81.5,
+		exclude:        "ba*.go",
+	}, report))
+
+	assert.Equal(t, `|   File   | Function | Coverage |
+|----------|----------|----------|
+| Total    |          | 25.0%    |
+| foo.go   |          | 25.0%    |
+| foo.go:5 | foo      | 0.0%     |
+`, report.String())
+
+	gha, err := ioutil.ReadFile("gha.txt")
+	require.NoError(t, err)
+
+	assert.Equal(t, `foo.go:6,8: 2 statement(s) not covered by tests
+::notice file=foo.go,line=6,endLine=8::2 statement(s) not covered by tests.
+foo.go:18,20: 2 statement(s) not covered by tests
+::notice file=foo.go,line=18,endLine=20::2 statement(s) not covered by tests.
+`, string(gha))
+
+	delta, err := ioutil.ReadFile("delta.txt")
+	require.NoError(t, err)
+
+	assert.Equal(t, "changed lines: (statements) 25.0%, coverage is less than 81.5%, consider testing the changes more thoroughly", string(delta))
+}
+
 func TestRun_funcCov(t *testing.T) {
 	require.NoError(t, os.Chdir("_testdata"))
 
