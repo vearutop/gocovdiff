@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -21,7 +22,7 @@ type flags struct {
 	covFile        string
 	module         string
 	ghaAnnotations string
-	excludeDirs    string
+	exclude        string
 	funcCov        string
 	funcMaxCov     float64
 	funcBaseCov    string
@@ -38,7 +39,7 @@ func parseFlags() flags {
 	flag.StringVar(&f.covFile, "cov", "coverage.txt", "Coverage file")
 	flag.StringVar(&f.module, "mod", "", "Module name (optional)")
 	flag.StringVar(&f.ghaAnnotations, "gha-annotations", "", "File to store GitHub Actions annotations")
-	flag.StringVar(&f.excludeDirs, "exclude", "", "Exclude directories, comma separated (optional)")
+	flag.StringVar(&f.exclude, "exclude", "", "Exclude directories by prefix and files by name pattern, comma separated (optional)")
 
 	flag.StringVar(&f.funcCov, "func-cov", "", "Current func coverage from 'go tool cover -func', requires -func-base-cov or -func-max-cov (optional)")
 	flag.StringVar(&f.funcBaseCov, "func-base-cov", "", "Base func coverage from 'go tool cover -func', requires -func-cov (optional)")
@@ -144,10 +145,10 @@ func run(f flags, report io.Writer) (err error) {
 	}
 
 	modified := map[string]map[int]line{}
-	excludeDirs := []string(nil)
+	exclude := []string(nil)
 
-	if f.excludeDirs != "" {
-		excludeDirs = strings.Split(f.excludeDirs, ",")
+	if f.exclude != "" {
+		exclude = strings.Split(f.exclude, ",")
 	}
 
 fileLoop:
@@ -156,8 +157,12 @@ fileLoop:
 			continue
 		}
 
-		for _, e := range excludeDirs {
+		for _, e := range exclude {
 			if strings.HasPrefix(f.NewName, e) {
+				continue fileLoop
+			}
+
+			if ok, err := filepath.Match(e, filepath.Base(f.NewName)); ok && err == nil {
 				continue fileLoop
 			}
 		}

@@ -41,7 +41,7 @@ Usage of gocovdiff:
   -diff string
         Git diff file for changes (optional)
   -exclude string
-        Exclude directories, comma separated (optional)
+        Exclude directories by prefix and files by name pattern, comma separated (optional)
   -func-base-cov string
         Base func coverage from 'go tool cover -func', requires -func-cov (optional)
   -func-cov string
