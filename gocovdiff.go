@@ -213,31 +213,33 @@ fileLoop:
 
 			if l.Count == -1 {
 				lines[i] = &block
-			} else {
-				// Do not merge blocks that has coverage.
-				if block.Count > 0 {
-					continue
-				}
 
-				l.NumStmt += block.NumStmt
+				continue
+			}
 
-				if l.StartLine == block.StartLine && l.StartCol > block.StartCol {
-					l.StartCol = block.StartCol
-				}
+			// Do not merge blocks that has coverage.
+			if block.Count > 0 {
+				continue
+			}
 
-				if l.StartLine > block.StartLine {
-					l.StartLine = block.StartLine
-					l.StartCol = block.StartCol
-				}
+			l.NumStmt += block.NumStmt
 
-				if l.EndLine == block.EndLine && l.EndCol < block.EndCol {
-					l.EndCol = block.EndCol
-				}
+			if l.StartLine == block.StartLine && l.StartCol > block.StartCol {
+				l.StartCol = block.StartCol
+			}
 
-				if l.EndLine < block.EndLine {
-					l.EndLine = block.EndLine
-					l.EndCol = block.EndCol
-				}
+			if l.StartLine > block.StartLine {
+				l.StartLine = block.StartLine
+				l.StartCol = block.StartCol
+			}
+
+			if l.EndLine == block.EndLine && l.EndCol < block.EndCol {
+				l.EndCol = block.EndCol
+			}
+
+			if l.EndLine < block.EndLine {
+				l.EndLine = block.EndLine
+				l.EndCol = block.EndCol
 			}
 		}
 
