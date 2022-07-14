@@ -77,11 +77,6 @@ func parseFlags() flags {
 	return f
 }
 
-type line struct {
-	statements int
-	covered    int
-}
-
 func main() {
 	if err := run(parseFlags(), os.Stdout); err != nil {
 		log.Fatal(err)
@@ -144,7 +139,7 @@ func run(f flags, report io.Writer) (err error) {
 		}()
 	}
 
-	modified := map[string]map[int]line{}
+	modified := map[string]map[int]*profileBlock{}
 	exclude := []string(nil)
 
 	if f.exclude != "" {
@@ -167,7 +162,7 @@ fileLoop:
 			}
 		}
 
-		lines := map[int]line{}
+		lines := map[int]*profileBlock{}
 
 		for _, h := range f.Hunks {
 			for _, l := range h.NewRange.Lines {
@@ -175,7 +170,7 @@ fileLoop:
 					continue
 				}
 
-				lines[l.Number] = line{covered: -1}
+				lines[l.Number] = &profileBlock{Count: -1}
 			}
 		}
 
@@ -197,28 +192,55 @@ fileLoop:
 			return
 		}
 
-		stmtCaptured := false
+		totCounted := false
 		for i := block.StartLine; i <= block.EndLine; i++ {
 			l, ok := lines[i]
 			if !ok {
 				continue
 			}
 
-			l.covered = block.Count
-			if !stmtCaptured {
-				l.statements += block.NumStmt
+			if !totCounted {
 				totStmt += block.NumStmt
 				fStat.totStmt += block.NumStmt
 
-				if l.covered > 0 {
+				if block.Count > 0 {
 					covStmt += block.NumStmt
 					fStat.covStmt += block.NumStmt
 				}
 
-				stmtCaptured = true
+				totCounted = true
 			}
 
-			lines[i] = l
+			if l.Count == -1 {
+				lines[i] = &block
+
+				continue
+			}
+
+			// Do not merge blocks that has coverage.
+			if block.Count > 0 {
+				continue
+			}
+
+			l.NumStmt += block.NumStmt
+
+			if l.StartLine == block.StartLine && l.StartCol > block.StartCol {
+				l.StartCol = block.StartCol
+			}
+
+			if l.StartLine > block.StartLine {
+				l.StartLine = block.StartLine
+				l.StartCol = block.StartCol
+			}
+
+			if l.EndLine == block.EndLine && l.EndCol < block.EndCol {
+				l.EndCol = block.EndCol
+			}
+
+			if l.EndLine < block.EndLine {
+				l.EndLine = block.EndLine
+				l.EndCol = block.EndCol
+			}
 		}
 
 		fileCoverage[fn] = fStat
@@ -246,7 +268,7 @@ fileLoop:
 		ll := make([]int, 0, len(lines))
 
 		for i, l := range lines {
-			if l.covered == 0 {
+			if l.Count == 0 {
 				ll = append(ll, i)
 			}
 		}
@@ -256,7 +278,6 @@ fileLoop:
 
 			p := ll[0]
 			start := 0
-			stmt := 0
 
 			for _, i := range ll {
 				if start == 0 {
@@ -264,13 +285,11 @@ fileLoop:
 				}
 
 				if i-p > 1 {
-					ga.printNotice(fn, start, p, stmt)
+					ga.printNotice(fn, start, p, lines)
 
 					start = 0
-					stmt = 0
 				}
 
-				stmt += lines[i].statements
 				p = i
 			}
 
@@ -278,7 +297,7 @@ fileLoop:
 				start = p
 			}
 
-			ga.printNotice(fn, start, p, stmt)
+			ga.printNotice(fn, start, p, lines)
 		}
 
 		funcs, err := findFuncs(fn)
@@ -292,10 +311,10 @@ fileLoop:
 
 			for i := fu.startLine; i <= fu.endLine; i++ {
 				if l, ok := lines[i]; ok {
-					totStmt += l.statements
+					totStmt += l.NumStmt
 
-					if l.covered > 0 {
-						covStmt += l.statements
+					if l.Count > 0 {
+						covStmt += l.NumStmt
 					}
 				}
 			}
