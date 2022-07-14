@@ -37,20 +37,20 @@ func TestRun(t *testing.T) {
 |----------|----------|----------|
 | Total    |          | 33.3%    |
 | bar.go   |          | 50.0%    |
-| bar.go:3 | Bar      | 0.0%     |
+| bar.go:3 | Bar      | 50.0%    |
 | foo.go   |          | 25.0%    |
-| foo.go:5 | foo      | 0.0%     |
+| foo.go:5 | foo      | 25.0%    |
 `, report.String())
 
 	gha, err := ioutil.ReadFile("gha.txt")
 	require.NoError(t, err)
 
-	assert.Equal(t, `bar.go:8,10: 2 statement(s) not covered by tests
-::notice file=bar.go,line=8,endLine=10::2 statement(s) not covered by tests.
-foo.go:6,8: 2 statement(s) not covered by tests
-::notice file=foo.go,line=6,endLine=8::2 statement(s) not covered by tests.
-foo.go:18,20: 2 statement(s) not covered by tests
-::notice file=foo.go,line=18,endLine=20::2 statement(s) not covered by tests.
+	assert.Equal(t, `bar.go:9,10: 1 statement(s) on lines 8:10 are not covered by tests
+::notice file=bar.go,line=9,endLine=10::1 statement(s) on lines 8:10 are not covered by tests.
+foo.go:7,8: 1 statement(s) on lines 6:8 are not covered by tests
+::notice file=foo.go,line=7,endLine=8::1 statement(s) on lines 6:8 are not covered by tests.
+foo.go:18,20: 2 statement(s) are not covered by tests
+::notice file=foo.go,line=18,endLine=20::2 statement(s) are not covered by tests.
 `, string(gha))
 
 	delta, err := ioutil.ReadFile("delta.txt")
@@ -81,16 +81,16 @@ func TestRun_excludeFiles(t *testing.T) {
 |----------|----------|----------|
 | Total    |          | 25.0%    |
 | foo.go   |          | 25.0%    |
-| foo.go:5 | foo      | 0.0%     |
+| foo.go:5 | foo      | 25.0%    |
 `, report.String())
 
 	gha, err := ioutil.ReadFile("gha.txt")
 	require.NoError(t, err)
 
-	assert.Equal(t, `foo.go:6,8: 2 statement(s) not covered by tests
-::notice file=foo.go,line=6,endLine=8::2 statement(s) not covered by tests.
-foo.go:18,20: 2 statement(s) not covered by tests
-::notice file=foo.go,line=18,endLine=20::2 statement(s) not covered by tests.
+	assert.Equal(t, `foo.go:7,8: 1 statement(s) on lines 6:8 are not covered by tests
+::notice file=foo.go,line=7,endLine=8::1 statement(s) on lines 6:8 are not covered by tests.
+foo.go:18,20: 2 statement(s) are not covered by tests
+::notice file=foo.go,line=18,endLine=20::2 statement(s) are not covered by tests.
 `, string(gha))
 
 	delta, err := ioutil.ReadFile("delta.txt")
