@@ -1,8 +1,7 @@
-package main
+package gocovdiff
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -44,7 +43,7 @@ func getDiff(diffFile string, parentCommit string) (*diffparser.Diff, error) {
 
 		d = o
 	} else {
-		df, err := ioutil.ReadFile(diffFile)
+		df, err := os.ReadFile(diffFile)
 		if err != nil {
 			log.Fatal(err)
 		}
