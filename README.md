@@ -29,6 +29,29 @@ $(go env GOPATH)/bin/gocovdiff --help
 
 Or download binary from [releases](https://github.com/vearutop/gocovdiff/releases).
 
+### Linux AMD64
+
+```
+wget https://github.com/vearutop/gocovdiff/releases/latest/download/linux_amd64.tar.gz && tar xf linux_amd64.tar.gz && rm linux_amd64.tar.gz
+./gocovdiff -version
+```
+
+### Macos Intel
+
+```
+wget https://github.com/vearutop/gocovdiff/releases/latest/download/darwin_amd64.tar.gz && tar xf darwin_amd64.tar.gz && rm darwin_amd64.tar.gz
+codesign -s - ./gocovdiff
+./gocovdiff -version
+```
+
+### Macos Apple Silicon (M1, etc...)
+
+```
+wget https://github.com/vearutop/gocovdiff/releases/latest/download/darwin_arm64.tar.gz && tar xf darwin_arm64.tar.gz && rm darwin_arm64.tar.gz
+codesign -s - ./gocovdiff
+./gocovdiff -version
+```
+
 ## Usage
 
 ```

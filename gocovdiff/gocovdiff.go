@@ -52,7 +52,7 @@ func parseFlags() flags {
 	flag.Parse()
 
 	if f.version {
-		fmt.Println(version.Info().Version)
+		fmt.Println(version.Module("github.com/vearutop/gocovdiff").Version)
 		os.Exit(0)
 	}
 
