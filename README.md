@@ -51,7 +51,7 @@ Usage of gocovdiff:
   -gha-annotations string
         File to store GitHub Actions annotations
   -mod string
-        Module name (optional)
+        Module name to strip from file names (optional)
   -parent string
         Parent commit hash (optional)
   -target-delta-cov float
