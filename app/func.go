@@ -4,7 +4,7 @@
 
 // This file implements the visitor that computes the (line, column)-(line-column) range for each function.
 
-package main
+package app
 
 import (
 	"go/ast"

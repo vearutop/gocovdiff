@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"bytes"
@@ -121,6 +121,31 @@ func TestRun_funcCov(t *testing.T) {
 | sample/foo.go   | foo      | 60.0%         | 44.4% (-15.6%)   |
 | sample/gone.go  | gone     | 60.0%         | no function      |
 `, report.String())
+}
+
+func TestRun_funcCov_module(t *testing.T) {
+	require.NoError(t, os.Chdir("_testdata"))
+
+	defer func() {
+		require.NoError(t, os.Chdir(".."))
+	}()
+
+	report := bytes.NewBuffer(nil)
+
+	require.NoError(t, run(flags{
+		module:      "sample",
+		funcCov:     "cur.func.txt",
+		funcBaseCov: "base.func.txt",
+	}, report))
+
+	assert.Equal(t, `|   File   | Function | Base Coverage | Current Coverage |
+|----------|----------|---------------|------------------|
+| Total    |          | 70.0%         | 56.2% (-13.8%)   |
+| added.go | added    | no function   | 60.0%            |
+| bar.go   | Bar      | 80.0%         | 71.4% (-8.6%)    |
+| foo.go   | foo      | 60.0%         | 44.4% (-15.6%)   |
+| gone.go  | gone     | 60.0%         | no function      |
+`, report.String(), report.String())
 }
 
 func TestRun_funcCov_noChanges(t *testing.T) {

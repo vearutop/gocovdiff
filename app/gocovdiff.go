@@ -1,10 +1,9 @@
-package main
+package app
 
 import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -37,7 +36,7 @@ func parseFlags() flags {
 	flag.StringVar(&f.diffFile, "diff", "", "Git diff file for changes (optional)")
 	flag.StringVar(&f.parentCommit, "parent", "", "Parent commit hash (optional)")
 	flag.StringVar(&f.covFile, "cov", "coverage.txt", "Coverage file")
-	flag.StringVar(&f.module, "mod", "", "Module name (optional)")
+	flag.StringVar(&f.module, "mod", "", "Module name to strip from file names (optional)")
 	flag.StringVar(&f.ghaAnnotations, "gha-annotations", "", "File to store GitHub Actions annotations")
 	flag.StringVar(&f.exclude, "exclude", "", "Exclude directories by prefix and files by name pattern, comma separated (optional)")
 
@@ -53,7 +52,7 @@ func parseFlags() flags {
 	flag.Parse()
 
 	if f.version {
-		fmt.Println(version.Info().Version)
+		fmt.Println(version.Module("github.com/vearutop/gocovdiff").Version)
 		os.Exit(0)
 	}
 
@@ -77,16 +76,17 @@ func parseFlags() flags {
 	return f
 }
 
-func main() {
+// Main runs application.
+func Main() {
 	if err := run(parseFlags(), os.Stdout); err != nil {
 		log.Fatal(err)
 	}
 }
 
-// nolint:maintidx
+//nolint:maintidx
 func run(f flags, report io.Writer) (err error) {
 	if f.funcMaxCov > 0 && f.funcCov != "" {
-		cur, err := ioutil.ReadFile(f.funcCov)
+		cur, err := os.ReadFile(f.funcCov)
 		if err != nil {
 			return fmt.Errorf("failed to read current coverage file: %w", err)
 		}
@@ -95,17 +95,17 @@ func run(f flags, report io.Writer) (err error) {
 	}
 
 	if f.funcCov != "" && f.funcBaseCov != "" {
-		base, err := ioutil.ReadFile(f.funcBaseCov)
+		base, err := os.ReadFile(f.funcBaseCov)
 		if err != nil {
 			return fmt.Errorf("failed to read base coverage file: %w", err)
 		}
 
-		cur, err := ioutil.ReadFile(f.funcCov)
+		cur, err := os.ReadFile(f.funcCov)
 		if err != nil {
 			return fmt.Errorf("failed to read current coverage file: %w", err)
 		}
 
-		return reportCoverFuncDiff(report, base, cur)
+		return reportCoverFuncDiff(report, f.module, base, cur)
 	}
 
 	if f.module == "" {

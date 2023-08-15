@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"bytes"
@@ -50,7 +50,7 @@ func reportUndercoveredFuncs(w io.Writer, max float64, cur []byte) error {
 	return nil
 }
 
-func reportCoverFuncDiff(w io.Writer, base, cur []byte) error {
+func reportCoverFuncDiff(w io.Writer, module string, base, cur []byte) error {
 	baseCov, err := parseCoverFunc(base)
 	if err != nil {
 		return fmt.Errorf("failed to parse base func coverage: %w", err)
@@ -103,6 +103,10 @@ func reportCoverFuncDiff(w io.Writer, base, cur []byte) error {
 			continue
 		}
 
+		if module != "" {
+			cf.filename = strings.TrimPrefix(cf.filename, module+"/")
+		}
+
 		switch {
 		case cf.curPercent == "-":
 			data = append(data, []string{cf.filename, cf.funcname, cf.percent + "%", "no function"})
@@ -153,7 +157,8 @@ func fmtCov(base, cur string) string {
 }
 
 // coverFuncLineRe represents a line in a `go tool cover -func` output.
-//    sample/foo.go:5:	foo		44.4%
+//
+//	sample/foo.go:5:	foo		44.4%
 var coverFuncLineRe = regexp.MustCompile(`^([^:]+):([0-9:]*)\s+([\w0-9\(\)]+)\s+([0-9\.]+)%$`)
 
 type coverFunc struct {
