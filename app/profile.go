@@ -1,4 +1,4 @@
-package gocovdiff
+package app
 
 import (
 	"bufio"

@@ -1,8 +1,8 @@
 // Package main provides an application.
 package main
 
-import "github.com/vearutop/gocovdiff/gocovdiff"
+import "github.com/vearutop/gocovdiff/app"
 
 func main() {
-	gocovdiff.Main()
+	app.Main()
 }
