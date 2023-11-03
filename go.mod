@@ -3,7 +3,7 @@ module github.com/vearutop/gocovdiff
 go 1.17
 
 require (
-	github.com/bool64/dev v0.2.29
+	github.com/bool64/dev v0.2.31
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/stretchr/testify v1.8.4
 	github.com/waigani/diffparser v0.0.0-20190828052634-7391f219313d
