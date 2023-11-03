@@ -9,7 +9,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-func printReport(w io.Writer, covStmt, totStmt int, functions []stat, fileCoverage map[string]stat) {
+func printReport(w io.Writer, covStmt, totStmt int, functions []stat, fileCoverage map[string]stat, untestedFiles []string) {
 	if totStmt == 0 {
 		_, err := w.Write([]byte("No changes in testable statements.\n"))
 		if err != nil {
@@ -47,6 +47,10 @@ func printReport(w io.Writer, covStmt, totStmt int, functions []stat, fileCovera
 
 		data = append(data, []string{fmt.Sprintf("%s:%d", fu.file, fu.line), fu.name, fmt.Sprintf("%.1f%%", fu.covPercent)})
 		prevFile = fu.file
+	}
+
+	for _, fn := range untestedFiles {
+		data = append(data, []string{fn, "", "no coverage"})
 	}
 
 	table := tablewriter.NewWriter(w)

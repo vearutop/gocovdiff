@@ -76,11 +76,7 @@ func parseProfiles(fileName string, cb func(fn string, block profileBlock)) erro
 		cb(fn, pb)
 	}
 
-	if err := s.Err(); err != nil {
-		return err
-	}
-
-	return nil
+	return s.Err()
 }
 
 func toInt(s string) int {

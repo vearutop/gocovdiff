@@ -163,6 +163,7 @@ fileLoop:
 		}
 
 		lines := map[int]*profileBlock{}
+		fmt.Printf("DIFF FILE: %#v\n", f)
 
 		for _, h := range f.Hunks {
 			for _, l := range h.NewRange.Lines {
@@ -256,11 +257,15 @@ fileLoop:
 
 	sort.Strings(files)
 
-	var functions []stat
+	var (
+		functions     []stat
+		untestedFiles []string
+	)
 
 	for _, fn := range files {
 		if !testedFiles[fn] {
 			ga.printNotTested(fn)
+			untestedFiles = append(untestedFiles, fn)
 		}
 
 		lines := modified[fn]
@@ -330,7 +335,7 @@ fileLoop:
 		}
 	}
 
-	printReport(report, covStmt, totStmt, functions, fileCoverage)
+	printReport(report, covStmt, totStmt, functions, fileCoverage, untestedFiles)
 
 	if f.deltaCovFile == "" {
 		return nil
@@ -358,7 +363,7 @@ fileLoop:
 		}
 	}
 
-	if _, err = df.Write([]byte(res)); err != nil {
+	if _, err = df.WriteString(res); err != nil {
 		return fmt.Errorf("failed to write to delta coverage file: %w", err)
 	}
 
