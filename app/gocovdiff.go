@@ -163,7 +163,6 @@ fileLoop:
 		}
 
 		lines := map[int]*profileBlock{}
-		fmt.Printf("DIFF FILE: %#v\n", f)
 
 		for _, h := range f.Hunks {
 			for _, l := range h.NewRange.Lines {
