@@ -103,25 +103,40 @@ Also, you can comment on the pull request with the report.
         id: annotate
         if: github.event.pull_request.base.sha != ''
         run: |
-          git fetch origin master ${{ github.event.pull_request.base.sha }}
-          curl -sLO https://github.com/vearutop/gocovdiff/releases/download/v1.3.4/linux_amd64.tar.gz && tar xf linux_amd64.tar.gz && echo "b351c67526eefeb0671c82e9271ae984875865eed19e911f40f78348cb98347c  gocovdiff" | shasum -c
-          REP=$(./gocovdiff -cov unit.coverprofile -gha-annotations gha-unit.txt)
+          curl -sLO https://github.com/vearutop/gocovdiff/releases/download/v1.4.2/linux_amd64.tar.gz && tar xf linux_amd64.tar.gz && rm linux_amd64.tar.gz
+          gocovdiff_hash=$(git hash-object ./gocovdiff)
+          [ "$gocovdiff_hash" == "c37862c73a677e5a9c069470287823ab5bbf0244" ] || (echo "::error::unexpected hash for gocovdiff, possible tampering: $gocovdiff_hash" && exit 1)
+          # Fetch PR diff from GitHub API.
+          curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github.v3.diff" https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} > pull_request.diff
+          REP=$(./gocovdiff -diff pull_request.diff -mod github.com/$GITHUB_REPOSITORY -cov unit.coverprofile -gha-annotations gha-unit.txt -delta-cov-file delta-cov-unit.txt -target-delta-cov ${TARGET_DELTA_COV})
           echo "${REP}"
-          REP="${REP//$'\n'/%0A}"
           cat gha-unit.txt
-          echo "::set-output name=rep::$REP"
-      - name: Comment Test Coverage
+          DIFF=$(test -e unit-base.txt && ./gocovdiff -mod github.com/$GITHUB_REPOSITORY -func-cov unit.txt -func-base-cov unit-base.txt || echo "Missing base coverage file")
+          TOTAL=$(cat delta-cov-unit.txt)
+          echo "rep<<EOF" >> $GITHUB_OUTPUT && echo "$REP" >> $GITHUB_OUTPUT && echo "EOF" >> $GITHUB_OUTPUT
+          echo "diff<<EOF" >> $GITHUB_OUTPUT && echo "$DIFF" >> $GITHUB_OUTPUT && echo "EOF" >> $GITHUB_OUTPUT
+          echo "total<<EOF" >> $GITHUB_OUTPUT && echo "$TOTAL" >> $GITHUB_OUTPUT && echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Comment test coverage
         continue-on-error: true
-        if: github.event.pull_request.base.sha != ''
+        if: matrix.go-version == env.COV_GO_VERSION && github.event.pull_request.base.sha != ''
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           header: unit-test
           message: |
             ### Unit Test Coverage
+            ${{ steps.annotate.outputs.total }}
             <details><summary>Coverage of changed lines</summary>
             
             ${{ steps.annotate.outputs.rep }}
+
+            </details>
+
+            <details><summary>Coverage diff with base branch</summary>
+
+            ${{ steps.annotate.outputs.diff }}
+            
             </details>
 
 ```
