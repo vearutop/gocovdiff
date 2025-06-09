@@ -47,6 +47,7 @@ func getDiff(diffFile string, parentCommit string) (*diffparser.Diff, error) {
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		d = df
 	}
 

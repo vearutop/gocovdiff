@@ -193,6 +193,7 @@ fileLoop:
 		}
 
 		totCounted := false
+
 		for i := block.StartLine; i <= block.EndLine; i++ {
 			l, ok := lines[i]
 			if !ok {
