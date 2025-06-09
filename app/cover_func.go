@@ -13,7 +13,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-func reportUndercoveredFuncs(w io.Writer, max float64, cur []byte) error {
+func reportUndercoveredFuncs(w io.Writer, maxFuncCov float64, cur []byte) error {
 	curCov, err := parseCoverFunc(cur)
 	if err != nil {
 		return fmt.Errorf("failed to parse current func coverage: %w", err)
@@ -31,7 +31,7 @@ func reportUndercoveredFuncs(w io.Writer, max float64, cur []byte) error {
 			return fmt.Errorf("failed to parse percent %q: %w", cf.percent, err)
 		}
 
-		if c > max {
+		if c > maxFuncCov {
 			continue
 		}
 
