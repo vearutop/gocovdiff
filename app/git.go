@@ -3,7 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -25,7 +25,7 @@ func forkPointFromLocal() (string, error) {
 }
 
 func forkPointFromGitHub(eventPath string) (string, error) {
-	f, err := ioutil.ReadFile(eventPath)
+	f, err := os.ReadFile(eventPath)
 	if err != nil {
 		return "", err
 	}

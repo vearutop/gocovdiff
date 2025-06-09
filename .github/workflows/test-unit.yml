@@ -55,6 +55,13 @@ jobs:
           # Use base sha for PR or new commit hash for master/main push in test result key.
           key: ${{ runner.os }}-unit-test-coverage-${{ (github.event.pull_request.base.sha != github.event.after) && github.event.pull_request.base.sha || github.event.after }}
 
+      - name: Get PR diff
+        run: |
+          curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3.diff" \
+            https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }} > pr_diff.diff
+          cat pr_diff.diff
+
       - name: Run test for base code
         if: matrix.go-version == env.COV_GO_VERSION && env.RUN_BASE_COVERAGE == 'on' && steps.base-coverage.outputs.cache-hit != 'true' && github.event.pull_request.base.sha != ''
         run: |

@@ -36,6 +36,7 @@ func getDiff(diffFile string, parentCommit string) (*diffparser.Diff, error) {
 	var d []byte
 
 	if diffFile == "" {
+
 		o, err := gitDiff(parentCommit)
 		if err != nil {
 			return nil, err
