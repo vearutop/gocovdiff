@@ -3,7 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -25,10 +25,11 @@ func forkPointFromLocal() (string, error) {
 }
 
 func forkPointFromGitHub(eventPath string) (string, error) {
-	f, err := ioutil.ReadFile(eventPath)
+	f, err := os.ReadFile(eventPath)
 	if err != nil {
 		return "", err
 	}
+
 	// pull_request.base.sha
 	type event struct {
 		PullRequest struct {
@@ -40,8 +41,6 @@ func forkPointFromGitHub(eventPath string) (string, error) {
 
 	var e event
 	if err := json.Unmarshal(f, &e); err != nil {
-		println(string(f))
-
 		return "", err
 	}
 
