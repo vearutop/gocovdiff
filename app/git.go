@@ -29,6 +29,9 @@ func forkPointFromGitHub(eventPath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	println(string(f))
+
 	// pull_request.base.sha
 	type event struct {
 		PullRequest struct {
